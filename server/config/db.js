@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 let pool = null;
 let isPgConnected = false;
