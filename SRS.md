@@ -171,3 +171,32 @@ The relational schema comprises:
 - `domain_requests`: Custom domain verification queue.
 - `reports`: Content violation moderation items with remarks.
 - `credit_history`: Transparent credit transaction logs.
+
+---
+
+## 11. System Workflow Diagram
+![System Workflow Diagram](docs/assets/system-workflow.png)
+
+---
+
+## 12. Entity-Relationship (ER) Diagram
+![Entity-Relationship (ER) Diagram](docs/assets/er-diagram.png)
+
+---
+
+## 13. UI Sketches & Interface Wireframes
+
+### Platform Overview & Student Dashboard Wireframe
+![Platform Overview Wireframe](docs/assets/ui-sketches-overview.png)
+
+### Submit New Project Modal Wireframe
+![Submit Project Form Wireframe](docs/assets/ui-sketches-submit.png)
+
+### Faculty & Admin Control Workspace Wireframe
+![Faculty & Admin Control Workspace](docs/assets/ui-sketches-faculty.png)
+
+---
+
+## 14. PDF Documentation
+- 📄 **Official SRS Documentation PDF**: [`docs/Student_Project_Repository_SRS_Documentation.pdf`](docs/Student_Project_Repository_SRS_Documentation.pdf)
+

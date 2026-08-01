@@ -37,10 +37,12 @@
 ## 📁 Repository Deliverables Index
 
 - 📄 **Software Requirements Specification**: [`SRS.md`](SRS.md)
+- 📑 **Full SRS Documentation PDF**: [`docs/Student_Project_Repository_SRS_Documentation.pdf`](docs/Student_Project_Repository_SRS_Documentation.pdf)
 - 📊 **Comprehensive Project Report**: [`PROJECT_REPORT.md`](PROJECT_REPORT.md)
-- 👥 **Team Details File**: [`TEAM_DETAILS.md`](TEAM_DETAILS.md)
+- 👥 **Team Details Specification**: [`TEAM_DETAILS.md`](TEAM_DETAILS.md)
 - 🗄️ **Database Schema SQL Script**: [`server/database/schema.sql`](server/database/schema.sql)
 - 💾 **Database Seed Sample Data**: [`server/database/seed.sql`](server/database/seed.sql)
+- 🖼️ **Diagram Assets**: ER Diagram ([`docs/assets/er-diagram.png`](docs/assets/er-diagram.png)), System Workflow ([`docs/assets/system-workflow.png`](docs/assets/system-workflow.png)), UI Sketches ([`docs/assets/ui-sketches-overview.png`](docs/assets/ui-sketches-overview.png))
 
 ---
 
