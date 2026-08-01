@@ -27,8 +27,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const fs = require('fs');
+
 // Static directory for uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static frontend assets if public folder exists
+const publicPath = path.join(__dirname, 'public');
+if (fs.existsSync(publicPath)) {
+  app.use(express.static(publicPath));
+}
 
 // Health Check API
 app.get('/api/health', (req, res) => {
@@ -44,6 +52,18 @@ app.use('/api/guides', guideRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Single Page Application (SPA) Fallback Route for Frontend
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next();
+  }
+  const indexHtmlPath = path.join(publicPath, 'index.html');
+  if (fs.existsSync(indexHtmlPath)) {
+    return res.sendFile(indexHtmlPath);
+  }
+  next();
+});
 
 // Error Middlewares
 app.use(notFoundHandler);
