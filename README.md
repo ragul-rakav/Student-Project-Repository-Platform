@@ -14,7 +14,7 @@
 ---
 
 ### 🌐 Live Application Deployment Link
-- **Live Platform URL**: [https://student-project-repository-codexx.vercel.app](https://student-project-repository-codexx.vercel.app) *(or your deployed server host link)*
+- **Live Platform URL**: [https://student-project-repository-platform.vercel.app](https://student-project-repository-platform.vercel.app)
 - **GitHub Repository**: [https://github.com/ragul-rakav/Student-Project-Repository-Platform](https://github.com/ragul-rakav/Student-Project-Repository-Platform)
 
 </div>

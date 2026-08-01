@@ -4,6 +4,8 @@
 - **Hackathon**: TechNova Software Hackathon
 - **Team Name**: Codexx
 - **Problem Title**: Student Project Repository and Showcase Platform
+- **Live Platform URL**: [https://student-project-repository-platform.vercel.app](https://student-project-repository-platform.vercel.app)
+- **GitHub Repository**: [https://github.com/ragul-rakav/Student-Project-Repository-Platform](https://github.com/ragul-rakav/Student-Project-Repository-Platform)
 
 ---
 
