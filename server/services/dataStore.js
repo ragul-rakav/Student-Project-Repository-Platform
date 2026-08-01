@@ -68,8 +68,8 @@ let projects = [
 ];
 
 let reviewQueue = [
-  { id: 102, title: 'Predictive Maintenance Dashboard', author: 'Rahul Mehta', category: 'Machine Learning', submitted: '4 days ago', type: 'Internal', faculty: 'Dr. Anita Verma', isEnhancement: false },
-  { id: 103, title: 'Peer Tutoring Scheduler', author: 'Priya Sharma', category: 'Web Development', submitted: '6 days ago', type: 'Internal', faculty: 'Dr. Rajesh Kumar', isEnhancement: false }
+  { id: 102, title: 'Predictive Maintenance Dashboard', author: 'Rahul Mehta', category: 'Machine Learning', submitted: '4 days ago', type: 'Internal', faculty: 'Dr. Anita Verma', isEnhancement: false, abstract: 'Real-time telemetry analysis dashboard predicting equipment breakdowns using Random Forest and Time-Series anomaly detection.', github: 'https://github.com/rahul/predictive-maint', doc: 'https://docs.google.com/document/d/1pred-maint', ppt: 'https://docs.google.com/presentation/d/1pred-maint-ppt', tech: ['Python', 'Scikit-Learn', 'React', 'FastAPI'] },
+  { id: 103, title: 'Peer Tutoring Scheduler', author: 'Priya Sharma', category: 'Web Development', submitted: '6 days ago', type: 'Internal', faculty: 'Dr. Rajesh Kumar', isEnhancement: false, abstract: 'Matching engine for senior and junior students for peer-to-peer academic assistance with integrated calendar syncing.', github: 'https://github.com/priya/peer-tutoring', doc: 'https://docs.google.com/document/d/1peer-tutor', ppt: 'https://docs.google.com/presentation/d/1peer-tutor-ppt', tech: ['Node.js', 'PostgreSQL', 'FullCalendar'] }
 ];
 
 let guideRequests = [
@@ -80,11 +80,15 @@ let collaborationRequests = [
   { id: 1, projectId: 2, projectTitle: 'Smart Campus Navigation', requester: 'Alex Johnson', owner: 'Priya Sharma', status: 'Pending' }
 ];
 
+let reports = [
+  { id: 1, projectId: 3, projectTitle: 'Campus Marketplace App', reporter: 'Rahul Mehta', category: 'Copyright / Plagiarism', reason: 'Uncredited reuse of component source from another repository.', status: 'Pending', createdAt: '1 day ago' }
+];
+
 let notifications = [
-  { id: 1, email: 'alex@university.edu', icon: 'star', text: 'Your Internal Project was approved. +10 credits', time: '2 hours ago' },
-  { id: 2, email: 'alex@university.edu', icon: 'bell', text: 'Dr. Smith accepted your External Project guide request', time: '5 hours ago' },
-  { id: 3, email: 'alex@university.edu', icon: 'award', text: 'You earned 5 credits for publishing a new Idea', time: '1 day ago' },
-  { id: 4, email: 'Administrator', icon: 'folder', text: 'New project uploaded: "Open Source LMS Plugin"', time: '3 hours ago' }
+  { id: 1, email: 'alex@university.edu', icon: 'star', text: 'Your Internal Project was approved. +10 credits', time: '2 hours ago', route: '/profile', read: false },
+  { id: 2, email: 'alex@university.edu', icon: 'bell', text: 'Dr. Smith accepted your External Project guide request', time: '5 hours ago', route: '/projects', read: false },
+  { id: 3, email: 'alex@university.edu', icon: 'award', text: 'You earned 5 credits for publishing a new Idea', time: '1 day ago', route: '/profile', read: false },
+  { id: 4, email: 'Administrator', icon: 'bell', text: 'Project "Campus Marketplace App" reported by Rahul Mehta', time: '1 day ago', route: '/admin?tab=reports', read: false }
 ];
 
 let departments = ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical'];
@@ -93,11 +97,35 @@ let accessTiers = [
   { min: 0, label: 'No Repository Access' },
   { min: 60, label: 'Idea Repository' },
   { min: 100, label: 'Internal Projects' },
-  { min: 200, label: 'External Projects' }
+  { min: 200, label: 'External Projects' },
+  { min: 300, label: 'Gold Level Projects' }
 ];
 
-let nextProjectId = 8;
+// Next-level projects for Showcase & Tier Locking
+projects.push(
+  {
+    id: 8, type: 'External', status: 'Approved', title: 'Autonomous Swarm Robotics Controller', author: 'Sarah Chen', dept: 'Computer Science', category: 'Robotics', likes: 89, commentsCount: 5, views: 610, liked: false,
+    abstract: 'Distributed path planning and obstacle avoidance algorithms for multi-uav swarm formations operating in GPS-denied environments.',
+    github: 'https://github.com/sarahchen/swarm-robotics', doc: 'https://docs.google.com/document/d/1swarm-robotics', ppt: 'https://docs.google.com/presentation/d/1swarm-ppt', demo: 'https://youtube.com/watch?v=swarm-demo', vercel: '',
+    tech: ['ROS 2', 'C++', 'Python', 'Gazebo'], collaborators: ['James Wilson'], comments: [], enhancements: []
+  },
+  {
+    id: 9, type: 'External', status: 'Approved', title: 'Quantum-Safe Encryption Protocol', author: 'Sarah Chen', dept: 'Computer Science', category: 'Cybersecurity', likes: 112, commentsCount: 8, views: 890, liked: false,
+    abstract: 'Lattice-based post-quantum cryptographic primitives implementation in Rust for secure end-to-end telemetry communication.',
+    github: 'https://github.com/sarahchen/quantum-safe-crypto', doc: 'https://docs.google.com/document/d/1quantum-crypto', ppt: 'https://docs.google.com/presentation/d/1quantum-ppt', demo: '', vercel: 'https://quantum-crypto-demo.vercel.app',
+    tech: ['Rust', 'Qiskit', 'C'], collaborators: [], comments: [], enhancements: []
+  },
+  {
+    id: 10, type: 'External', status: 'Approved', title: 'Global Decentralized Healthcare Ledger', author: 'Sarah Chen', dept: 'Computer Science', category: 'Blockchain', likes: 140, commentsCount: 12, views: 1250, liked: false,
+    abstract: 'Zero-knowledge proof medical record exchange platform enabling patients to share cryptographic consents with hospital networks securely.',
+    github: 'https://github.com/sarahchen/healthcare-zk-ledger', doc: 'https://docs.google.com/document/d/1healthcare-zk', ppt: 'https://docs.google.com/presentation/d/1zk-ppt', demo: 'https://youtube.com/watch?v=zk-demo', vercel: 'https://zk-health.vercel.app',
+    tech: ['Solidity', 'Hyperledger', 'Go', 'Zero-Knowledge Proofs'], collaborators: ['Maya Patel'], comments: [], enhancements: []
+  }
+);
+
+let nextProjectId = 11;
 let nextCollabRequestId = 2;
+let nextReportId = 2;
 
 module.exports = {
   users,
@@ -105,9 +133,11 @@ module.exports = {
   reviewQueue,
   guideRequests,
   collaborationRequests,
+  reports,
   notifications,
   departments,
   accessTiers,
   getNextProjectId: () => nextProjectId++,
-  getNextCollabId: () => nextCollabRequestId++
+  getNextCollabId: () => nextCollabRequestId++,
+  getNextReportId: () => nextReportId++
 };

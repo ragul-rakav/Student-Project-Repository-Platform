@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
+      if (!recentProjects.length) setLoading(true);
       const [projRes, lbRes, notifRes] = await Promise.all([
         api.get('/projects?limit=3'),
         api.get('/leaderboard'),
@@ -64,6 +64,30 @@ export default function DashboardPage() {
       }
     } catch (err) {
       showToast(err.response?.data?.message || 'Review action failed');
+    }
+  };
+
+  const handleDeleteNotification = async (id, e) => {
+    if (e) e.stopPropagation();
+    try {
+      const res = await api.delete(`/admin/notifications/${id}`);
+      if (res.data.success) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        showToast('Notification removed');
+      }
+    } catch (err) {
+      console.error('Delete notification failed:', err);
+    }
+  };
+
+  const handleNotificationClick = async (n) => {
+    try {
+      await api.post(`/admin/notifications/${n.id}/read`);
+    } catch (err) {}
+    if (n.route) {
+      navigate(n.route);
+    } else {
+      navigate('/projects');
     }
   };
 
@@ -220,13 +244,18 @@ export default function DashboardPage() {
           </div>
           <div className="card" style={{ padding: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <h3 style={{ margin: '0 0 10px', fontSize: '16px', color: '#fff' }}>System Notifications</h3>
-            {notifications.slice(0, 4).map((n, i) => (
-              <div key={i} className="notif-item">
-                <div className="notif-icon"><Icon name={n.icon || 'bell'} size={15} /></div>
-                <div>
-                  <div className="notif-text">{n.text}</div>
-                  <div className="notif-time"><Icon name="bell" size={11} /> {n.time || 'Just now'}</div>
+            {notifications.slice(0, 4).map((n) => (
+              <div key={n.id} className="notif-item" style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => handleNotificationClick(n)}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <div className="notif-icon"><Icon name={n.icon || 'bell'} size={15} /></div>
+                  <div>
+                    <div className="notif-text">{n.text}</div>
+                    <div className="notif-time"><Icon name="bell" size={11} /> {n.time || 'Just now'}</div>
+                  </div>
                 </div>
+                <button className="icon-btn" style={{ width: '24px', height: '24px', flexShrink: 0 }} onClick={(e) => handleDeleteNotification(n.id, e)} title="Remove notification">
+                  <Icon name="x" size={13} />
+                </button>
               </div>
             ))}
           </div>
@@ -376,13 +405,18 @@ export default function DashboardPage() {
         <div>
           <div className="card" style={{ padding: '20px', marginBottom: '20px' }}>
             <h3 style={{ margin: '0 0 10px', fontSize: '16px', color: '#fff' }}>Notifications</h3>
-            {notifications.length ? notifications.slice(0, 3).map((n, i) => (
-              <div key={i} className="notif-item">
-                <div className="notif-icon"><Icon name={n.icon || 'star'} size={15} /></div>
-                <div>
-                  <div className="notif-text">{n.text}</div>
-                  <div className="notif-time"><Icon name="bell" size={11} /> {n.time || 'Just now'}</div>
+            {notifications.length ? notifications.slice(0, 3).map((n) => (
+              <div key={n.id} className="notif-item" style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => handleNotificationClick(n)}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <div className="notif-icon"><Icon name={n.icon || 'star'} size={15} /></div>
+                  <div>
+                    <div className="notif-text">{n.text}</div>
+                    <div className="notif-time"><Icon name="bell" size={11} /> {n.time || 'Just now'}</div>
+                  </div>
                 </div>
+                <button className="icon-btn" style={{ width: '24px', height: '24px', flexShrink: 0 }} onClick={(e) => handleDeleteNotification(n.id, e)} title="Remove notification">
+                  <Icon name="x" size={13} />
+                </button>
               </div>
             )) : (
               <p style={{ fontSize: '12.5px', color: 'var(--muted-2)', margin: '10px 0 0 0' }}>No new notifications.</p>
@@ -394,7 +428,7 @@ export default function DashboardPage() {
             {leaderboard.slice(0, 4).map((s) => (
               <div key={s.rank} className="lb-row">
                 <div className={`lb-badge ${s.rank === 1 ? 'gold' : ''}`}>{s.rank}</div>
-                <div style={{ flex: 1, fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }} className="clickable-name" onClick={() => navigate('/leaderboard')}>
+                <div style={{ flex: 1, fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }} className="clickable-name" onClick={() => navigate(`/profile?name=${encodeURIComponent(s.name)}`)}>
                   {s.name}
                 </div>
                 <div style={{ textAlign: 'right' }}>

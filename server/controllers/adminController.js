@@ -220,3 +220,65 @@ exports.getNotifications = (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+exports.deleteNotification = (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    dataStore.notifications = dataStore.notifications.filter(n => n.id !== id);
+    return res.json({ success: true, message: 'Notification removed' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.markNotificationRead = (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const n = dataStore.notifications.find(item => item.id === id);
+    if (n) n.read = true;
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.getReports = (req, res) => {
+  try {
+    return res.json({ success: true, reports: dataStore.reports || [] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.resolveReport = (req, res) => {
+  try {
+    const { reportId, action } = req.body;
+    const report = (dataStore.reports || []).find(r => r.id === parseInt(reportId));
+    if (!report) {
+      return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    if (action === 'deleteProject') {
+      const projIndex = dataStore.projects.findIndex(p => p.id === report.projectId);
+      if (projIndex !== -1) {
+        dataStore.projects.splice(projIndex, 1);
+      }
+      report.status = 'Action Taken: Project Removed';
+      dataStore.notifications.unshift({
+        id: dataStore.notifications.length + 1,
+        email: 'Administrator',
+        icon: 'check',
+        text: `Report #${report.id} resolved: Project "${report.projectTitle}" removed`,
+        time: 'Just now',
+        route: '/admin?tab=reports',
+        read: false
+      });
+      return res.json({ success: true, message: `Report approved: Project "${report.projectTitle}" has been removed.` });
+    } else {
+      report.status = 'Rejected / Dismissed';
+      return res.json({ success: true, message: 'Report dismissed' });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

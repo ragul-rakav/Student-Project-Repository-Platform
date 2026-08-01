@@ -16,5 +16,10 @@ router.put('/tiers', authenticateToken, authorizeRoles('Administrator'), adminCo
 
 router.get('/analytics', authenticateToken, authorizeRoles('Administrator'), adminController.getAnalytics);
 router.get('/notifications', authenticateToken, adminController.getNotifications);
+router.delete('/notifications/:id', authenticateToken, adminController.deleteNotification);
+router.put('/notifications/:id/read', authenticateToken, adminController.markNotificationRead);
+
+router.get('/reports', authenticateToken, authorizeRoles('Administrator'), adminController.getReports);
+router.post('/reports/resolve', authenticateToken, authorizeRoles('Administrator'), adminController.resolveReport);
 
 module.exports = router;

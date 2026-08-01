@@ -11,5 +11,6 @@ router.post('/ideas', authenticateToken, projectController.publishIdea);
 router.post('/:id/like', authenticateToken, projectController.toggleLike);
 router.post('/:id/comments', authenticateToken, projectController.postComment);
 router.post('/:id/report', authenticateToken, projectController.reportProject);
+router.delete('/:id', authenticateToken, projectController.deleteProject);
 
 module.exports = router;

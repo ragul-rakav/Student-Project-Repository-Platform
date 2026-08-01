@@ -441,6 +441,22 @@ tr:hover td{background:rgba(255,255,255,0.01);}
   margin-top: 6px;
 }
 
+/* Select Dropdowns styling */
+select, option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-radius: 8px;
+}
+select option {
+  padding: 8px 12px;
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+select option:hover, select option:focus, select option:active, select option:checked {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
 /* Responsive */
 @media (max-width:1080px){
   .stat-grid{grid-template-columns:repeat(2,1fr);}

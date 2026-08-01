@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import api from '../services/api';
 import Icon from '../components/common/Icons';
 
 export default function AdminCenterPage() {
   const { showToast } = useApp();
-  const [tab, setTab] = useState('users');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') || 'users';
+
+  const [tab, setTab] = useState(initialTab);
 
   // Users state
   const [users, setUsers] = useState([]);
@@ -23,7 +28,16 @@ export default function AdminCenterPage() {
   const [tierInternal, setTierInternal] = useState(100);
   const [tierExternal, setTierExternal] = useState(200);
 
+  // Reports state
+  const [reports, setReports] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (queryParams.get('tab')) {
+      setTab(queryParams.get('tab'));
+    }
+  }, [location.search]);
 
   useEffect(() => {
     fetchAdminData();
@@ -32,10 +46,11 @@ export default function AdminCenterPage() {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const [uRes, dRes, tRes] = await Promise.all([
+      const [uRes, dRes, tRes, repRes] = await Promise.all([
         api.get('/admin/users'),
         api.get('/admin/departments'),
-        api.get('/admin/tiers')
+        api.get('/admin/tiers'),
+        api.get('/admin/reports')
       ]);
 
       if (uRes.data.success) setUsers(uRes.data.users);
@@ -46,6 +61,7 @@ export default function AdminCenterPage() {
         if (tiers[2]) setTierInternal(tiers[2].min);
         if (tiers[3]) setTierExternal(tiers[3].min);
       }
+      if (repRes.data.success) setReports(repRes.data.reports);
     } catch (err) {
       console.error('Fetch admin data error:', err);
     } finally {
@@ -123,6 +139,18 @@ export default function AdminCenterPage() {
     }
   };
 
+  const handleResolveReport = async (reportId, action) => {
+    try {
+      const res = await api.post('/admin/reports/resolve', { reportId, action });
+      if (res.data.success) {
+        showToast(res.data.message);
+        fetchAdminData();
+      }
+    } catch (err) {
+      showToast('Resolve report failed');
+    }
+  };
+
   if (loading) {
     return <div style={{ color: 'var(--muted)', padding: '40px' }}>Loading Admin Center...</div>;
   }
@@ -132,13 +160,16 @@ export default function AdminCenterPage() {
       <div className="page-head">
         <div>
           <h1>Admin Center</h1>
-          <p>Manage users, departments, and repository tiers settings.</p>
+          <p>Manage users, departments, repository tiers, and review project reports.</p>
         </div>
       </div>
 
       <div className="card" style={{ padding: '22px', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="sub-tabs">
           <div className={`sub-tab ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>Users</div>
+          <div className={`sub-tab ${tab === 'reports' ? 'active' : ''}`} onClick={() => setTab('reports')}>
+            Project Reports {reports.filter(r => r.status === 'Pending').length > 0 && `(${reports.filter(r => r.status === 'Pending').length})`}
+          </div>
           <div className={`sub-tab ${tab === 'departments' ? 'active' : ''}`} onClick={() => setTab('departments')}>Departments</div>
           <div className={`sub-tab ${tab === 'tiers' ? 'active' : ''}`} onClick={() => setTab('tiers')}>Repository Tiers</div>
         </div>
@@ -162,11 +193,64 @@ export default function AdminCenterPage() {
                     <td style={{ color: 'var(--muted)' }}>{u.email}</td>
                     <td><span className="badge badge-gray"><Icon name="shield" size={11} /> {u.role}</span></td>
                     <td><span className="badge badge-green">{u.status}</span></td>
-                    <td><button className="btn btn-outline btn-sm" onClick={() => handleRemoveUser(u.id, u.name)}>Remove</button></td>
+                    <td><button className="btn btn-outline btn-sm" onClick={() => handleRemoveUser(u.id, u.name)}>Remove Account</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {tab === 'reports' && (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>Reported Projects Moderation Queue</h3>
+            </div>
+            {reports.length ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Project</th>
+                    <th>Reporter</th>
+                    <th>Category</th>
+                    <th>Reason / Details</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reports.map((r) => (
+                    <tr key={r.id}>
+                      <td style={{ fontWeight: 600, color: '#fff' }}>{r.projectTitle}</td>
+                      <td>{r.reporter}</td>
+                      <td><span className="badge badge-gray">{r.category}</span></td>
+                      <td style={{ color: '#cbd5e1', maxWidth: '280px', fontSize: '12.5px' }}>{r.reason}</td>
+                      <td>
+                        <span className={`badge ${r.status === 'Pending' ? 'badge-yellow' : 'badge-gray'}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td>
+                        {r.status === 'Pending' ? (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button className="btn btn-danger-outline btn-sm" onClick={() => handleResolveReport(r.id, 'deleteProject')}>
+                              Approve & Delete Project
+                            </button>
+                            <button className="btn btn-outline btn-sm" onClick={() => handleResolveReport(r.id, 'reject')}>
+                              Dismiss Report
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Resolved</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="empty" style={{ padding: '30px' }}><Icon name="check" size={30} /><div>No reported projects at this time.</div></div>
+            )}
           </div>
         )}
 

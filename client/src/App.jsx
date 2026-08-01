@@ -94,7 +94,7 @@ export default function App() {
             <Route
               path="/reviews"
               element={
-                <ProtectedRoute allowedRoles={['Faculty']}>
+                <ProtectedRoute allowedRoles={['Faculty', 'Administrator']}>
                   <Shell>
                     <ReviewsPage />
                   </Shell>
@@ -104,7 +104,7 @@ export default function App() {
             <Route
               path="/guides"
               element={
-                <ProtectedRoute allowedRoles={['Faculty']}>
+                <ProtectedRoute allowedRoles={['Faculty', 'Administrator']}>
                   <Shell>
                     <GuidesPage />
                   </Shell>
@@ -114,7 +114,7 @@ export default function App() {
             <Route
               path="/profile"
               element={
-                <ProtectedRoute allowedRoles={['Student']}>
+                <ProtectedRoute allowedRoles={['Student', 'Faculty', 'Administrator']}>
                   <Shell>
                     <ProfilePage />
                   </Shell>

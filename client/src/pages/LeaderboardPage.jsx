@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Icon from '../components/common/Icons';
@@ -14,6 +15,7 @@ const CREDIT_RULES = [
 
 export default function LeaderboardPage() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([]);
   const [filter, setFilter] = useState('overall');
   const [dept, setDept] = useState(currentUser?.dept || 'Computer Science');
@@ -63,7 +65,12 @@ export default function LeaderboardPage() {
       {podiumOrder.length > 0 && (
         <div className="podium">
           {podiumOrder.map((s) => (
-            <div key={s.rank} className={`card podium-card ${s.rank === 1 ? 'first' : ''}`}>
+            <div
+              key={s.rank}
+              className={`card podium-card ${s.rank === 1 ? 'first' : ''}`}
+              onClick={() => navigate(`/profile?name=${encodeURIComponent(s.name)}`)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className={`rank-pill ${s.rank === 1 ? 'gold' : s.rank === 2 ? 'silver' : 'bronze'}`}>#{s.rank}</div>
               <div className="avatar-lg">{helperInitials(s.name)}</div>
               <div className="podium-name clickable-name">{s.name}</div>
@@ -78,7 +85,7 @@ export default function LeaderboardPage() {
       )}
 
       <div className="toolbar">
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', items: 'center', flexWrap: 'wrap' }}>
           <div className="tabs">
             <div className={`tab ${filter === 'overall' ? 'active' : ''}`} onClick={() => setFilter('overall')}>Overall</div>
             <div className={`tab ${filter === 'dept' ? 'active' : ''}`} onClick={() => setFilter('dept')}>Department</div>
@@ -129,7 +136,7 @@ export default function LeaderboardPage() {
                 <tr key={s.rank}>
                   <td className="rank-num">#{s.rank}</td>
                   <td>
-                    <div className="stu-row">
+                    <div className="stu-row" onClick={() => navigate(`/profile?name=${encodeURIComponent(s.name)}`)} style={{ cursor: 'pointer' }}>
                       <div className="avatar-sm">{helperInitials(s.name)}</div>
                       <span className="clickable-name">{s.name}</span>
                     </div>

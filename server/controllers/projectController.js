@@ -36,16 +36,20 @@ exports.getProjects = (req, res) => {
 
     const sortFns = {
       latest: (a, b) => b.id - a.id,
+      popular: (a, b) => {
+        const scoreA = (a.views * 1.0) + (a.likes * 4.0) + ((a.commentsCount || (a.comments ? a.comments.length : 0)) * 6.0);
+        const scoreB = (b.views * 1.0) + (b.likes * 4.0) + ((b.commentsCount || (b.comments ? b.comments.length : 0)) * 6.0);
+        return scoreB - scoreA;
+      },
       views: (a, b) => b.views - a.views,
       credits: (a, b) => {
         const uA = dataStore.users.find(u => u.name === a.author);
         const uB = dataStore.users.find(u => u.name === b.author);
         return (uB ? uB.credits : 0) - (uA ? uA.credits : 0);
-      },
-      popular: (a, b) => ((b.likes + (b.comments ? b.comments.length : 0)) - (a.likes + (a.comments ? a.comments.length : 0)))
+      }
     };
 
-    list.sort(sortFns[sort] || sortFns.latest);
+    list.sort(sortFns[sort] || sortFns.popular);
 
     const total = list.length;
     const startIndex = (page - 1) * limit;
@@ -77,6 +81,15 @@ exports.getProjectById = (req, res) => {
   }
 };
 
+function normalizeUrl(str) {
+  if (!str || !str.trim()) return '';
+  let val = str.trim();
+  if (!val.startsWith('http://') && !val.startsWith('https://')) {
+    val = 'https://' + val.replace(/^\/+/, '');
+  }
+  return val;
+}
+
 exports.submitProject = (req, res) => {
   try {
     const { title, category, tech, abstract, github, doc, ppt, cert, demo, vercel, faculty, type } = req.body;
@@ -85,6 +98,13 @@ exports.submitProject = (req, res) => {
     if (!title || !category || !tech || !abstract || !type) {
       return res.status(400).json({ success: false, message: 'Title, category, tech stack, abstract, and project type are required' });
     }
+
+    const normGithub = normalizeUrl(github);
+    const normDoc = normalizeUrl(doc);
+    const normPpt = normalizeUrl(ppt);
+    const normCert = normalizeUrl(cert);
+    const normDemo = normalizeUrl(demo);
+    const normVercel = normalizeUrl(vercel);
 
     const techArray = Array.isArray(tech) ? tech : tech.split(',').map(t => t.trim()).filter(t => t.length > 0);
     const newId = dataStore.getNextProjectId();
@@ -104,19 +124,19 @@ exports.submitProject = (req, res) => {
         type: 'Internal',
         status: 'In Review',
         title,
-        author: user.name,
-        dept: user.dept,
+        author: user ? user.name : 'Student',
+        dept: user ? user.dept : 'Computer Science',
         category,
         likes: 0,
         commentsCount: 0,
         views: 0,
         liked: false,
         abstract,
-        github: github || '',
-        doc: doc || '',
-        ppt: ppt || '',
-        demo: demo || '',
-        vercel: vercel || '',
+        github: normGithub,
+        doc: normDoc,
+        ppt: normPpt,
+        demo: normDemo,
+        vercel: normVercel,
         tech: techArray,
         collaborators: [],
         comments: [],
@@ -128,20 +148,28 @@ exports.submitProject = (req, res) => {
       dataStore.reviewQueue.unshift({
         id: newId,
         title,
-        author: user.name,
+        author: user ? user.name : 'Student',
         category,
         submitted: 'Just now',
         type: 'Internal',
         faculty: faculty || 'Dr. Sarah Smith',
-        isEnhancement: false
+        isEnhancement: false,
+        abstract,
+        github: normGithub,
+        doc: normDoc,
+        ppt: normPpt,
+        tech: techArray,
+        files: uploadedFiles
       });
 
       dataStore.notifications.unshift({
         id: dataStore.notifications.length + 1,
         email: faculty || 'Faculty',
         icon: 'bell',
-        text: `New Internal Project submitted: "${title}" by ${user.name}`,
-        time: 'Just now'
+        text: `New Internal Project submitted: "${title}" by ${user ? user.name : 'Student'}`,
+        time: 'Just now',
+        route: '/reviews',
+        read: false
       });
 
       return res.status(201).json({
@@ -155,19 +183,19 @@ exports.submitProject = (req, res) => {
         type: 'External',
         status: 'Pending Guide',
         title,
-        author: user.name,
-        dept: user.dept,
+        author: user ? user.name : 'Student',
+        dept: user ? user.dept : 'Computer Science',
         category,
         likes: 0,
         commentsCount: 0,
         views: 0,
         liked: false,
         abstract,
-        github: github || '',
-        doc: doc || '',
-        cert: cert || '',
-        demo: demo || '',
-        vercel: vercel || '',
+        github: normGithub,
+        doc: normDoc,
+        cert: normCert,
+        demo: normDemo,
+        vercel: normVercel,
         tech: techArray,
         collaborators: [],
         comments: [],
@@ -178,7 +206,7 @@ exports.submitProject = (req, res) => {
       dataStore.projects.unshift(newProj);
       dataStore.guideRequests.unshift({
         id: newId,
-        student: user.name,
+        student: user ? user.name : 'Student',
         project: title,
         faculty: faculty || 'Dr. Sarah Smith',
         category,
@@ -189,8 +217,10 @@ exports.submitProject = (req, res) => {
         id: dataStore.notifications.length + 1,
         email: faculty || 'Faculty',
         icon: 'chat',
-        text: `${user.name} requested you as guide for external project "${title}"`,
-        time: 'Just now'
+        text: `${user ? user.name : 'Student'} requested you as guide for external project "${title}"`,
+        time: 'Just now',
+        route: '/guides',
+        read: false
       });
 
       return res.status(201).json({
@@ -246,7 +276,9 @@ exports.publishIdea = (req, res) => {
       email: user.email,
       icon: 'award',
       text: `Published Idea "${title}". +5 credits earned.`,
-      time: 'Just now'
+      time: 'Just now',
+      route: '/profile',
+      read: false
     });
 
     return res.status(201).json({
@@ -285,7 +317,9 @@ exports.toggleLike = (req, res) => {
             email: authorUser.email,
             icon: 'award',
             text: `Your project "${p.title}" crossed ${newLikeCredits * 10} likes! +1 credit points awarded.`,
-            time: 'Just now'
+            time: 'Just now',
+            route: '/profile',
+            read: false
           });
         }
       }
@@ -331,7 +365,9 @@ exports.postComment = (req, res) => {
           email: authorUser.email,
           icon: 'chat',
           text: `${user.name} commented on your project "${p.title}"`,
-          time: 'Just now'
+          time: 'Just now',
+          route: '/projects',
+          read: false
         });
       }
     }
@@ -345,6 +381,7 @@ exports.postComment = (req, res) => {
 exports.reportProject = (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    const { category, reason } = req.body;
     const p = dataStore.projects.find(x => x.id === id);
     if (!p) {
       return res.status(404).json({ success: false, message: 'Project not found' });
@@ -352,15 +389,51 @@ exports.reportProject = (req, res) => {
 
     const user = dataStore.users.find(u => u.email.toLowerCase() === req.user.email.toLowerCase());
 
+    const reportObj = {
+      id: dataStore.getNextReportId(),
+      projectId: p.id,
+      projectTitle: p.title,
+      reporter: user ? user.name : 'User',
+      category: category || 'General Violation',
+      reason: reason || 'Inappropriate or non-compliant content',
+      status: 'Pending',
+      createdAt: 'Just now'
+    };
+
+    if (!dataStore.reports) dataStore.reports = [];
+    dataStore.reports.unshift(reportObj);
+
     dataStore.notifications.unshift({
       id: dataStore.notifications.length + 1,
       email: 'Administrator',
       icon: 'bell',
-      text: `Project "${p.title}" reported by ${user.name}`,
-      time: 'Just now'
+      text: `Report on "${p.title}" by ${user ? user.name : 'User'}: ${category || 'Violation'}`,
+      time: 'Just now',
+      route: '/admin?tab=reports',
+      read: false
     });
 
     return res.json({ success: true, message: 'Project reported to administrator' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.deleteProject = (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const index = dataStore.projects.findIndex(x => x.id === id);
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    const deleted = dataStore.projects.splice(index, 1)[0];
+    dataStore.reviewQueue = dataStore.reviewQueue.filter(r => r.id !== id);
+    if (dataStore.reports) {
+      dataStore.reports = dataStore.reports.filter(rep => rep.projectId !== id);
+    }
+
+    return res.json({ success: true, message: `Project "${deleted.title}" removed successfully` });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

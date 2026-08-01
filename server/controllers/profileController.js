@@ -2,8 +2,7 @@ const dataStore = require('../services/dataStore');
 
 exports.getProfile = (req, res) => {
   try {
-    const { name } = req.params;
-    const targetName = name || req.user.name;
+    const targetName = req.query.name || req.params.name || req.user.name;
     const user = dataStore.users.find(u => u.name.toLowerCase() === targetName.toLowerCase());
 
     if (!user) {
