@@ -27,25 +27,20 @@
 - **Faculty Tier**: Inspect full project details **prior to approval**, manage review queues, accept/reject guide requests, and award credits.
 - **Administrator Super-User**: Full access across all student & faculty views, moderation controls, user management, and direct content removal.
 
-### 🎥 2. YouTube-Inspired Popularity Algorithm
-- Non-LLM engagement scoring formula designed to highlight trending submissions dynamically:
-  $$\text{Score} = (\text{Views} \times 1.0) + (\text{Likes} \times 4.0) + (\text{Comments} \times 6.0)$$
-- Real-time sorting by **Popular**, **Latest**, **Most Viewed**, and **Highest Credits**.
-
-### 🔍 3. Pre-Approval Inspection & Inline Link Verification
+### 🔍 2. Pre-Approval Inspection & Inline Link Verification
 - **Faculty Pre-Approval Inspector**: Allows faculty to review full source code links, documentation PDFs, tech stacks, and team members before approving a project into public repositories.
 - **Automatic URL Normalizer & Validator**: Backend automatically formats external links (`github.com/...`, `docs.google.com/...`) while displaying clear, field-level inline validation warnings without intrusive popups.
 
-### 🛡️ 4. Structured Reporting & Moderation Center
+### 🛡️ 3. Structured Reporting & Moderation Center
 - **Structured Violation Reporting**: Modal system allowing users to report suspicious links, copyright issues, or inappropriate content directly to administrators.
 - **Admin Moderation Tab**: Dedicated queue for reviewing, resolving, or rejecting reports with automated notifications sent to involved parties.
 
-### 🏆 5. Gamified Credit Tiers & Leaderboard
+### 🏆 4. Gamified Credit Tiers & Leaderboard
 - Students earn credit points through approved submissions and peer interactions.
 - Dynamic unlocks for **Idea Repository** (60+ credits), **Internal Projects** (100+ credits), and **External Projects** (200+ credits, min. 3 approved projects).
 - Clickable student profiles linking to customized user portfolio pages (`/profile?name=...`).
 
-### 🔔 6. Synchronized Interactive Notifications
+### 🔔 5. Synchronized Interactive Notifications
 - Real-time notifications synced across top-bar dropdowns and dashboard views.
 - Direct route navigation (e.g., clicking a credit notification opens the target project; clicking a report notification opens the Admin moderation tab).
 - Manual notification removal controls on all views.
