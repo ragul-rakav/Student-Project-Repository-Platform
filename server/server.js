@@ -49,6 +49,10 @@ app.use('/api/admin', adminRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`🚀 ProjectHub Express Backend Server listening on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production' || require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 ProjectHub Express Backend Server listening on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
