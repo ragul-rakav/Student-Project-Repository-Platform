@@ -1,4 +1,4 @@
-# Team Details - Hackathon Deliverable
+# Team Details 
 
 ## Project Information
 - **Hackathon**: TechNova Software Hackathon
