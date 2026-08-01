@@ -132,6 +132,47 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
+
+          {/* CREDIT HISTORY AUDIT LOG */}
+          <div className="card" style={{ padding: '22px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Icon name="award" size={18} /> Credit History Audit Log
+              </h3>
+              <span className="credit-pill"><Icon name="star" size={12} /> Total: {targetUser?.credits || 0} Points</span>
+            </div>
+
+            {targetUser?.creditHistory && targetUser.creditHistory.length > 0 ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ fontSize: '13px' }}>
+                  <thead>
+                    <tr>
+                      <th>Activity / Event</th>
+                      <th>Date</th>
+                      <th>Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {targetUser.creditHistory.map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ color: '#e2e8f0', fontWeight: 500 }}>{item.title}</td>
+                        <td style={{ color: 'var(--muted)', fontSize: '12px' }}>{item.date}</td>
+                        <td>
+                          <span style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', padding: '2px 8px', borderRadius: '12px', fontWeight: 700, fontSize: '12px' }}>
+                            +{item.points} pts
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ color: 'var(--muted)', fontSize: '13px', padding: '12px 0' }}>
+                No credit transactions logged yet. Points are awarded upon project approvals, ideas, and enhancements.
+              </div>
+            )}
+          </div>
         </div>
 
         <div>

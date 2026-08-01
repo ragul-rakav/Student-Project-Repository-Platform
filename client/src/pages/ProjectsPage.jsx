@@ -41,7 +41,7 @@ export default function ProjectsPage() {
 
   // Submit form state
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('Machine Learning');
   const [tech, setTech] = useState('');
   const [abstract, setAbstract] = useState('');
   const [github, setGithub] = useState('');
@@ -50,7 +50,6 @@ export default function ProjectsPage() {
   const [cert, setCert] = useState('');
   const [demo, setDemo] = useState('');
   const [vercel, setVercel] = useState('');
-  const [faculty, setFaculty] = useState('Dr. Sarah Smith');
   const [selectedFiles, setSelectedFiles] = useState([]);
 
   // Inline URL errors
@@ -65,15 +64,29 @@ export default function ProjectsPage() {
   const [enhDetails, setEnhDetails] = useState('');
   const [enhLink, setEnhLink] = useState('');
 
+  const [domainFilter, setDomainFilter] = useState('all');
+  const [accessFilter, setAccessFilter] = useState('all');
+  const [customDomainName, setCustomDomainName] = useState('');
+
+  const predefinedDomainList = [
+    'Machine Learning',
+    'Web Development',
+    'Mobile Development',
+    'Blockchain',
+    'Internet of Things',
+    'Cybersecurity',
+    'Cloud Computing',
+    'Other'
+  ];
+
   useEffect(() => {
     fetchProjects();
-  }, [filter, search, sort]);
+  }, [filter, domainFilter, accessFilter, search, sort]);
 
   const fetchProjects = async () => {
     try {
-      // Buttery smooth background fetching: only show full loading indicator on empty initial load
       if (projects.length === 0) setLoading(true);
-      const res = await api.get('/projects', { params: { filter, search, sort } });
+      const res = await api.get('/projects', { params: { filter, domain: domainFilter, accessLevel: accessFilter, search, sort } });
       if (res.data.success) {
         setProjects(res.data.projects);
       }
@@ -101,6 +114,11 @@ export default function ProjectsPage() {
   };
 
   const handleCardClick = async (p) => {
+    if (p.status === 'Domain Verification Pending') {
+      showToast('This project is currently awaiting custom domain verification by Administrator.');
+      return;
+    }
+
     if (checkAccess(p)) {
       try {
         const res = await api.get(`/projects/${p.id}`);
@@ -163,6 +181,11 @@ export default function ProjectsPage() {
   const handleSubmitProject = async (e) => {
     e.preventDefault();
 
+    if (category === 'Other' && !customDomainName.trim()) {
+      showToast('Please specify your proposed custom domain name.');
+      return;
+    }
+
     // Inline URL validation check
     const errors = {};
     if (github && !validateUrl(github)) errors.github = 'Invalid URL format (e.g. https://github.com/...)';
@@ -183,6 +206,7 @@ export default function ProjectsPage() {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('category', category);
+      formData.append('customDomainName', customDomainName);
       formData.append('tech', tech);
       formData.append('abstract', abstract);
       formData.append('github', github);
@@ -191,7 +215,6 @@ export default function ProjectsPage() {
       formData.append('cert', cert);
       formData.append('demo', demo);
       formData.append('vercel', vercel);
-      formData.append('faculty', faculty);
       formData.append('type', submitType);
 
       for (let i = 0; i < selectedFiles.length; i++) {
@@ -214,7 +237,7 @@ export default function ProjectsPage() {
   };
 
   const resetSubmitForm = () => {
-    setTitle(''); setCategory(''); setTech(''); setAbstract(''); setGithub('');
+    setTitle(''); setCategory('Machine Learning'); setCustomDomainName(''); setTech(''); setAbstract(''); setGithub('');
     setDoc(''); setPpt(''); setCert(''); setDemo(''); setVercel(''); setSelectedFiles([]); setUrlErrors({});
   };
 
@@ -251,16 +274,20 @@ export default function ProjectsPage() {
     setModal('clone');
   };
 
-  const handleCopyCloneCmd = (project) => {
+  const handleCopyCloneCmd = async (project) => {
     const gitUrl = project?.github || `https://github.com/campus/${(project?.title || 'repo').toLowerCase().replace(/\s+/g, '-')}`;
     const cmd = `git clone ${gitUrl}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(cmd);
     }
     showToast(`Copied: "${cmd}"`);
+    try {
+      await api.post(`/projects/${project.id}/clone`);
+      fetchProjects();
+    } catch (err) {}
   };
 
-  const handleForkProjectDraft = (project) => {
+  const handleForkProjectDraft = async (project) => {
     resetSubmitForm();
     setTitle(`Fork: ${project.title}`);
     setCategory(project.category || 'Web Development');
@@ -269,6 +296,10 @@ export default function ProjectsPage() {
     setGithub(project.github || '');
     setModal('submit');
     showToast(`Initialized project draft from ${project.title}`);
+    try {
+      await api.post(`/projects/${project.id}/clone`);
+      fetchProjects();
+    } catch (err) {}
   };
 
   const handleDeleteProject = async (e, projectId) => {
@@ -333,13 +364,13 @@ export default function ProjectsPage() {
           <p>Browse internal, external, and idea submissions across the platform.</p>
         </div>
         {(currentUser?.role === 'Student' || currentUser?.role === 'Administrator') && (
-          <button className="btn btn-primary" onClick={() => { setSubmitType('Internal'); setModal('submit'); }}>
+          <button className="btn btn-primary" onClick={() => { resetSubmitForm(); setSubmitType('Internal'); setModal('submit'); }}>
             <Icon name="plus" size={16} /> Submit Project
           </button>
         )}
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar" style={{ flexWrap: 'wrap', gap: '12px' }}>
         <div className="tabs">
           {tabs.map(([id, label]) => (
             <div key={id} className={`tab ${filter === id ? 'active' : ''}`} onClick={() => setFilter(id)}>
@@ -348,7 +379,30 @@ export default function ProjectsPage() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select
+            className="field"
+            style={{ width: 'auto', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 12px', fontSize: '13px', background: '#0f172a', color: '#fff', margin: 0 }}
+            value={domainFilter}
+            onChange={(e) => setDomainFilter(e.target.value)}
+          >
+            <option value="all">Domain: All Domains</option>
+            {predefinedDomainList.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+
+          <select
+            className="field"
+            style={{ width: 'auto', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 12px', fontSize: '13px', background: '#0f172a', color: '#fff', margin: 0 }}
+            value={accessFilter}
+            onChange={(e) => setAccessFilter(e.target.value)}
+          >
+            <option value="all">Access: All Projects</option>
+            <option value="unlocked">Access: Unlocked Only</option>
+            <option value="locked">Access: Locked Only</option>
+          </select>
+
           <div className="search-wrap">
             <Icon name="search2" size={16} />
             <input
@@ -358,9 +412,10 @@ export default function ProjectsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+
           <select
             className="field"
-            style={{ width: 'auto', border: '1px solid var(--border)', borderRadius: '10px', padding: '9px 12px', fontSize: '13.5px', background: '#0f172a', color: '#fff', margin: 0 }}
+            style={{ width: 'auto', border: '1px solid var(--border)', borderRadius: '10px', padding: '8px 12px', fontSize: '13px', background: '#0f172a', color: '#fff', margin: 0 }}
             value={sort}
             onChange={(e) => setSort(e.target.value)}
           >
@@ -377,14 +432,20 @@ export default function ProjectsPage() {
         <div className="proj-grid">
           {projects.map((p) => {
             const hasAccess = checkAccess(p);
+            const isDomainPending = (p.status === 'Domain Verification Pending');
             return (
               <div
                 key={p.id}
                 className={`card proj-card${hasAccess ? '' : ' locked'}`}
                 onClick={() => handleCardClick(p)}
-                style={{ position: 'relative' }}
+                style={{
+                  position: 'relative',
+                  opacity: isDomainPending ? 0.75 : 1,
+                  border: isDomainPending ? '1px dashed #f59e0b' : undefined,
+                  background: isDomainPending ? 'rgba(245, 158, 11, 0.04)' : undefined
+                }}
               >
-                {!hasAccess && (
+                {!hasAccess && !isDomainPending && (
                   <div className="lock-overlay-icon">
                     <Icon name="lock" size={14} />
                   </div>
@@ -392,7 +453,13 @@ export default function ProjectsPage() {
                 <div className="proj-top">
                   <div className="proj-badges">
                     <BadgeType type={p.type} />
-                    <BadgeStatus status={p.status} />
+                    {isDomainPending ? (
+                      <span className="badge badge-warning" style={{ background: 'rgba(245,158,11,0.2)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)', fontSize: '10.5px', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '12px', height: '22px' }}>
+                        ⏳ Domain Approval Pending
+                      </span>
+                    ) : (
+                      <BadgeStatus status={p.status} />
+                    )}
                   </div>
                   <div className="proj-cat" style={{ marginRight: '20px' }}>{p.category}</div>
                 </div>
@@ -418,9 +485,10 @@ export default function ProjectsPage() {
                     </button>
                     <span><Icon name="comment" size={15} /> {p.commentsCount || (p.comments ? p.comments.length : 0)}</span>
                     <span><Icon name="eye" size={15} /> {p.views}</span>
+                    <span title="Project Clones / Forks"><Icon name="folder" size={15} /> {p.clones || p.clonesCount || 0}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    {hasAccess && (
+                    {hasAccess && !isDomainPending && (
                       <button
                         className="btn btn-outline btn-sm"
                         style={{ padding: '2px 8px', fontSize: '11.5px', height: '26px' }}
@@ -457,8 +525,8 @@ export default function ProjectsPage() {
             <h3>Submit Project</h3>
             <p className="hint">
               {submitType === 'Internal'
-                ? 'Internal academic projects are auto-assigned a faculty reviewer — no guide request needed.'
-                : 'External projects need a faculty guide to accept your request before review.'}
+                ? 'Internal academic projects are automatically assigned an eligible faculty reviewer based on domain expertise.'
+                : 'External projects send a guide request to an eligible faculty member in your domain.'}
             </p>
             <div className="tabs" style={{ marginBottom: '16px' }}>
               <div className={`tab ${submitType === 'Internal' ? 'active' : ''}`} onClick={() => setSubmitType('Internal')}>Internal Project</div>
@@ -466,7 +534,36 @@ export default function ProjectsPage() {
             </div>
             <form onSubmit={handleSubmitProject}>
               <div className="field"><label>Project title</label><input required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Smart Attendance Tracker" /></div>
-              <div className="field"><label>Domain / Category</label><input required value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Machine Learning" /></div>
+              
+              <div className="field">
+                <label>Domain / Category</label>
+                <select
+                  className="field"
+                  style={{ width: '100%', background: '#0f172a', color: '#fff', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)' }}
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  {predefinedDomainList.map(d => (
+                    <option key={d} value={d} style={{ background: '#0f172a', color: '#fff' }}>{d}</option>
+                  ))}
+                </select>
+              </div>
+
+              {category === 'Other' && (
+                <div className="field" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)', padding: '12px', borderRadius: '8px' }}>
+                  <label style={{ color: '#fbbf24', fontWeight: 600 }}>Specify Proposed Custom Domain</label>
+                  <input
+                    required
+                    value={customDomainName}
+                    onChange={(e) => setCustomDomainName(e.target.value)}
+                    placeholder="e.g. Quantum Computing Simulators"
+                  />
+                  <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '4px' }}>
+                    ℹ️ Custom domains require Administrator verification before entering faculty review.
+                  </div>
+                </div>
+              )}
+
               <div className="field"><label>Technologies (comma separated)</label><input required value={tech} onChange={(e) => setTech(e.target.value)} placeholder="e.g. React, Python, Flask" /></div>
               <div className="field"><label>Abstract</label><textarea required rows="2" value={abstract} onChange={(e) => setAbstract(e.target.value)} placeholder="Short summary of the project"></textarea></div>
 
@@ -512,14 +609,16 @@ export default function ProjectsPage() {
                 <label>Upload Documents / Code (Multer file storage)</label>
                 <input type="file" multiple onChange={(e) => setSelectedFiles(e.target.files)} style={{ padding: '6px' }} />
               </div>
-              <div className="field">
-                <label>Faculty Reviewer / Guide</label>
-                <select value={faculty} onChange={(e) => setFaculty(e.target.value)} style={{ background: '#0f172a', color: '#fff' }}>
-                  <option style={{ background: '#0f172a', color: '#fff' }}>Dr. Sarah Smith</option>
-                  <option style={{ background: '#0f172a', color: '#fff' }}>Dr. Rajesh Kumar</option>
-                  <option style={{ background: '#0f172a', color: '#fff' }}>Dr. Anita Verma</option>
-                </select>
+
+              <div className="field" style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.25)', padding: '12px', borderRadius: '8px', marginTop: '14px' }}>
+                <div style={{ color: '#818cf8', fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Icon name="shield" size={15} /> Automated Faculty Reviewer Assignment
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '4px', lineHeight: 1.4 }}>
+                  Faculty reviewers are automatically assigned based on domain expertise and pending workload capacity limits. Assigned faculty details remain confidential.
+                </div>
               </div>
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModal(null)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">{submitType === 'Internal' ? 'Submit for review' : 'Send guide request'}</button>

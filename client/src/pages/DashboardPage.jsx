@@ -195,40 +195,108 @@ export default function DashboardPage() {
       <div>
         <div className="page-head">
           <div>
-            <h1>Admin Overview</h1>
-            <p>Platform health, moderation queue, and repository activity.</p>
+            <h1>Unified Admin Dashboard</h1>
+            <p>Real-time ecosystem metrics, faculty capacity status, domain requests, and activity monitoring.</p>
           </div>
-          <button className="btn btn-primary" onClick={() => navigate('/analytics')}>
-            <Icon name="chart" size={16} /> View Analytics
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button className="btn btn-outline" onClick={() => navigate('/admin?tab=domains')}>
+              <Icon name="bell" size={16} /> Domain Requests
+            </button>
+            <button className="btn btn-primary" onClick={() => navigate('/admin')}>
+              <Icon name="usercog" size={16} /> Admin Governance Center
+            </button>
+          </div>
         </div>
 
-        <div className="stat-grid">
+        {/* UNIFIED METRICS ROW */}
+        <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: '24px' }}>
           <div className="card stat-card">
-            <div className="stat-top"><span>Total Projects</span><div className="stat-icon"><Icon name="folder" size={16} /></div></div>
-            <div className="stat-value">{analytics?.totalProjects || recentProjects.length}</div>
-            <div className="stat-sub">live submissions</div>
-          </div>
-          <div className="card stat-card">
-            <div className="stat-top"><span>Active Students</span><div className="stat-icon"><Icon name="users" size={16} /></div></div>
+            <div className="stat-top"><span>Total Students</span><div className="stat-icon"><Icon name="users" size={16} /></div></div>
             <div className="stat-value">{analytics?.activeStudents || 12}</div>
             <div className="stat-sub">registered student accounts</div>
           </div>
           <div className="card stat-card">
-            <div className="stat-top"><span>Pending Reviews</span><div className="stat-icon"><Icon name="book" size={16} /></div></div>
-            <div className="stat-value">{analytics?.pendingReviews || 2}</div>
-            <div className="stat-sub">awaiting faculty action</div>
+            <div className="stat-top"><span>Faculty Members</span><div className="stat-icon"><Icon name="usercog" size={16} /></div></div>
+            <div className="stat-value">{analytics?.facultyCount || 6}</div>
+            <div className="stat-sub">active reviewers & guides</div>
           </div>
           <div className="card stat-card">
-            <div className="stat-top"><span>Registered Users</span><div className="stat-icon"><Icon name="usercog" size={16} /></div></div>
-            <div className="stat-value">12</div>
-            <div className="stat-sub">students, faculty & admins</div>
+            <div className="stat-top"><span>Pending Reviews</span><div className="stat-icon"><Icon name="book" size={16} /></div></div>
+            <div className="stat-value" style={{ color: '#fbbf24' }}>{analytics?.pendingReviews || 0}</div>
+            <div className="stat-sub">awaiting faculty evaluation</div>
+          </div>
+          <div className="card stat-card">
+            <div className="stat-top"><span>Approved Projects</span><div className="stat-icon"><Icon name="check" size={16} /></div></div>
+            <div className="stat-value" style={{ color: '#34d399' }}>{analytics?.approvedProjects || 0}</div>
+            <div className="stat-sub">unlocked in repository</div>
           </div>
         </div>
 
+        {/* WORKLOAD & CATEGORY CHARTS ROW */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+          <div className="card" style={{ padding: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ margin: '0 0 14px', fontSize: '16px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Icon name="usercog" size={16} /> Faculty Review Load & Domain Capacities
+            </h3>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '12px' }}>
+              Workload limits ensure projects are automatically distributed without faculty overload.
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ fontSize: '12.5px' }}>
+                <thead>
+                  <tr><th>Faculty Expert</th><th>Specializations</th><th>Capacity Limit</th></tr>
+                </thead>
+                <tbody>
+                  {(analytics?.facultyWorkload || [
+                    { name: 'Dr. Arumugam Pillai', specializations: ['Machine Learning', 'Cloud Computing'], maxPendingThreshold: 10 },
+                    { name: 'Dr. Senthamizhan V', specializations: ['Web Development', 'Cybersecurity'], maxPendingThreshold: 10 },
+                    { name: 'Dr. Thenmozhi K', specializations: ['Mobile Development', 'Internet of Things'], maxPendingThreshold: 10 }
+                  ]).map((f, idx) => (
+                    <tr key={idx}>
+                      <td style={{ fontWeight: 600, color: '#fff' }}>{f.name}</td>
+                      <td style={{ color: 'var(--muted)' }}>{(f.specializations || []).join(', ')}</td>
+                      <td>
+                        <span className="badge badge-gray" style={{ color: '#38bdf8' }}>
+                          {f.maxPendingThreshold || 10} pending max
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ margin: '0 0 14px', fontSize: '16px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Icon name="chart" size={16} /> Project Submissions by Domain
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+              {(analytics?.categories || [
+                ['Machine Learning', 4, 11],
+                ['Web Development', 3, 11],
+                ['Mobile Development', 2, 11],
+                ['Blockchain', 1, 11],
+                ['Internet of Things', 1, 11]
+              ]).map(([catName, count, total]) => (
+                <div key={catName}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', color: '#cbd5e1', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: 500 }}>{catName}</span>
+                    <span style={{ color: 'var(--muted)' }}>{count} projects</span>
+                  </div>
+                  <div style={{ width: '100%', height: '7px', background: 'rgba(255,255,255,0.06)', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, (count / (total || 1)) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #38bdf8)', borderRadius: '4px' }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* RECENT SUBMISSIONS & SYSTEM NOTIFICATIONS */}
         <div className="dash-grid">
           <div>
-            <h3 style={{ margin: '0 0 14px', fontSize: '17px', color: '#fff' }}>Recent Submissions</h3>
+            <h3 style={{ margin: '0 0 14px', fontSize: '17px', color: '#fff' }}>Recent Platform Submissions</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(230px,1fr))', gap: '16px' }}>
               {recentProjects.map((p) => (
                 <div key={p.id} className="card proj-card" onClick={() => navigate('/projects')}>
@@ -243,7 +311,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="card" style={{ padding: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: '16px', color: '#fff' }}>System Notifications</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: '16px', color: '#fff' }}>System Governance Feed</h3>
             {notifications.slice(0, 4).map((n) => (
               <div key={n.id} className="notif-item" style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => handleNotificationClick(n)}>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>

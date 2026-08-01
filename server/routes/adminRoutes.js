@@ -22,4 +22,8 @@ router.put('/notifications/:id/read', authenticateToken, adminController.markNot
 router.get('/reports', authenticateToken, authorizeRoles('Administrator'), adminController.getReports);
 router.post('/reports/resolve', authenticateToken, authorizeRoles('Administrator'), adminController.resolveReport);
 
+router.get('/domains', authenticateToken, authorizeRoles('Administrator'), adminController.getDomainRequests);
+router.post('/domains/resolve', authenticateToken, authorizeRoles('Administrator'), adminController.resolveDomainRequest);
+router.put('/faculty/config', authenticateToken, authorizeRoles('Administrator'), adminController.updateFacultyConfig);
+
 module.exports = router;

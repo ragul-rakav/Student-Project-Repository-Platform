@@ -18,13 +18,35 @@ function checkProjectAccess(p, currentUser) {
 
 exports.getProjects = (req, res) => {
   try {
-    let { filter, search, sort, page = 1, limit = 50 } = req.query;
+    let { filter, domain, accessLevel, search, sort, page = 1, limit = 50 } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
+    const currentUser = req.user ? dataStore.users.find(u => u.email.toLowerCase() === req.user.email.toLowerCase()) : null;
 
     let list = dataStore.projects.filter(p => {
-      if (p.type !== 'Idea' && p.status !== 'Approved') return false;
+      // Include approved projects, published ideas, OR pending custom domain verification projects
+      if (p.type !== 'Idea' && p.status !== 'Approved' && p.status !== 'Domain Verification Pending') return false;
+      
+      // Type Filter
       if (filter && filter !== 'all' && p.type.toLowerCase() !== filter.toLowerCase()) return false;
+      
+      // Domain Filter
+      if (domain && domain !== 'all') {
+        if (domain === 'Other') {
+          if (!p.category.toLowerCase().startsWith('other') && p.status !== 'Domain Verification Pending') return false;
+        } else if (p.category.toLowerCase() !== domain.toLowerCase()) {
+          return false;
+        }
+      }
+
+      // Access Level Filter (Unlocked vs Locked)
+      if (accessLevel && accessLevel !== 'all' && currentUser && currentUser.role === 'Student') {
+        const hasAccess = checkProjectAccess(p, currentUser);
+        if (accessLevel === 'unlocked' && !hasAccess) return false;
+        if (accessLevel === 'locked' && hasAccess) return false;
+      }
+
+      // Search Filter
       if (search) {
         const q = search.toLowerCase();
         const techStr = p.tech ? p.tech.join(' ').toLowerCase() : '';
@@ -37,8 +59,10 @@ exports.getProjects = (req, res) => {
     const sortFns = {
       latest: (a, b) => b.id - a.id,
       popular: (a, b) => {
-        const scoreA = (a.views * 1.0) + (a.likes * 4.0) + ((a.commentsCount || (a.comments ? a.comments.length : 0)) * 6.0);
-        const scoreB = (b.views * 1.0) + (b.likes * 4.0) + ((b.commentsCount || (b.comments ? b.comments.length : 0)) * 6.0);
+        const clonesA = a.clonesCount || a.clones || 0;
+        const clonesB = b.clonesCount || b.clones || 0;
+        const scoreA = (a.views * 1.0) + (a.likes * 4.0) + ((a.commentsCount || (a.comments ? a.comments.length : 0)) * 6.0) + (clonesA * 8.0);
+        const scoreB = (b.views * 1.0) + (b.likes * 4.0) + ((b.commentsCount || (b.comments ? b.comments.length : 0)) * 6.0) + (clonesB * 8.0);
         return scoreB - scoreA;
       },
       views: (a, b) => b.views - a.views,
@@ -53,7 +77,14 @@ exports.getProjects = (req, res) => {
 
     const total = list.length;
     const startIndex = (page - 1) * limit;
-    const paginatedList = list.slice(startIndex, startIndex + limit);
+    const paginatedList = list.slice(startIndex, startIndex + limit).map(p => {
+      // Redact assignedFaculty for Students to maintain review privacy
+      const sanitized = { ...p };
+      if (currentUser && currentUser.role === 'Student') {
+        delete sanitized.assignedFaculty;
+      }
+      return sanitized;
+    });
 
     return res.json({
       success: true,
@@ -75,7 +106,12 @@ exports.getProjectById = (req, res) => {
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
     project.views += 1;
-    return res.json({ success: true, project });
+    const currentUser = req.user ? dataStore.users.find(u => u.email.toLowerCase() === req.user.email.toLowerCase()) : null;
+    const sanitized = { ...project };
+    if (currentUser && currentUser.role === 'Student') {
+      delete sanitized.assignedFaculty;
+    }
+    return res.json({ success: true, project: sanitized });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -92,11 +128,11 @@ function normalizeUrl(str) {
 
 exports.submitProject = (req, res) => {
   try {
-    const { title, category, tech, abstract, github, doc, ppt, cert, demo, vercel, faculty, type } = req.body;
+    const { title, category, customDomainName, tech, abstract, github, doc, ppt, cert, demo, vercel, type } = req.body;
     const user = dataStore.users.find(u => u.email.toLowerCase() === req.user.email.toLowerCase());
 
     if (!title || !category || !tech || !abstract || !type) {
-      return res.status(400).json({ success: false, message: 'Title, category, tech stack, abstract, and project type are required' });
+      return res.status(400).json({ success: false, message: 'Title, domain category, tech stack, abstract, and project type are required' });
     }
 
     const normGithub = normalizeUrl(github);
@@ -118,6 +154,73 @@ exports.submitProject = (req, res) => {
       }));
     }
 
+    const isCustomDomain = (category === 'Other');
+    const finalCategory = isCustomDomain ? `Other (${customDomainName || 'Custom Domain'})` : category;
+
+    // CUSTOM DOMAIN VERIFICATION FLOW
+    if (isCustomDomain) {
+      const newProj = {
+        id: newId,
+        type,
+        status: 'Domain Verification Pending',
+        domainStatus: 'Pending',
+        proposedDomain: customDomainName || 'Custom Domain',
+        title,
+        author: user ? user.name : 'Student',
+        dept: user ? user.dept : 'Computer Science',
+        category: finalCategory,
+        likes: 0,
+        commentsCount: 0,
+        views: 0,
+        clones: 0,
+        liked: false,
+        abstract,
+        github: normGithub,
+        doc: normDoc,
+        ppt: normPpt,
+        cert: normCert,
+        demo: normDemo,
+        vercel: normVercel,
+        tech: techArray,
+        collaborators: [],
+        assignedFaculty: 'Unassigned (Awaiting Domain Approval)',
+        comments: [],
+        enhancements: [],
+        files: uploadedFiles
+      };
+
+      dataStore.projects.unshift(newProj);
+      dataStore.domainRequests.unshift({
+        id: dataStore.getNextDomainRequestId(),
+        projectId: newId,
+        projectTitle: title,
+        studentName: user ? user.name : 'Student',
+        proposedDomain: customDomainName || 'Custom Domain',
+        description: abstract,
+        status: 'Pending',
+        submittedAt: 'Just now'
+      });
+
+      dataStore.notifications.unshift({
+        id: dataStore.notifications.length + 1,
+        email: 'Administrator',
+        icon: 'bell',
+        text: `New custom domain request "${customDomainName}" submitted by ${user ? user.name : 'Student'} for project "${title}"`,
+        time: 'Just now',
+        route: '/admin?tab=domains',
+        read: false
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: 'Project submitted — pending custom domain verification by Administrator',
+        project: newProj
+      });
+    }
+
+    // AUTOMATED RANDOM FACULTY ASSIGNMENT WITH WORKLOAD THRESHOLD
+    const assignedFaculty = dataStore.assignRandomFacultyForDomain(finalCategory);
+
     if (type === 'Internal') {
       const newProj = {
         id: newId,
@@ -126,10 +229,11 @@ exports.submitProject = (req, res) => {
         title,
         author: user ? user.name : 'Student',
         dept: user ? user.dept : 'Computer Science',
-        category,
+        category: finalCategory,
         likes: 0,
         commentsCount: 0,
         views: 0,
+        clones: 0,
         liked: false,
         abstract,
         github: normGithub,
@@ -139,6 +243,7 @@ exports.submitProject = (req, res) => {
         vercel: normVercel,
         tech: techArray,
         collaborators: [],
+        assignedFaculty,
         comments: [],
         enhancements: [],
         files: uploadedFiles
@@ -147,12 +252,13 @@ exports.submitProject = (req, res) => {
       dataStore.projects.unshift(newProj);
       dataStore.reviewQueue.unshift({
         id: newId,
+        projectId: newId,
         title,
         author: user ? user.name : 'Student',
-        category,
+        category: finalCategory,
         submitted: 'Just now',
         type: 'Internal',
-        faculty: faculty || 'Dr. Sarah Smith',
+        faculty: assignedFaculty,
         isEnhancement: false,
         abstract,
         github: normGithub,
@@ -164,9 +270,9 @@ exports.submitProject = (req, res) => {
 
       dataStore.notifications.unshift({
         id: dataStore.notifications.length + 1,
-        email: faculty || 'Faculty',
+        email: assignedFaculty,
         icon: 'bell',
-        text: `New Internal Project submitted: "${title}" by ${user ? user.name : 'Student'}`,
+        text: `New Internal Project assigned for review: "${title}" by ${user ? user.name : 'Student'}`,
         time: 'Just now',
         route: '/reviews',
         read: false
@@ -174,7 +280,7 @@ exports.submitProject = (req, res) => {
 
       return res.status(201).json({
         success: true,
-        message: `Submitted — sent to ${faculty || 'Faculty'} for review`,
+        message: `Submitted — automatically assigned for faculty review`,
         project: newProj
       });
     } else {
@@ -185,10 +291,11 @@ exports.submitProject = (req, res) => {
         title,
         author: user ? user.name : 'Student',
         dept: user ? user.dept : 'Computer Science',
-        category,
+        category: finalCategory,
         likes: 0,
         commentsCount: 0,
         views: 0,
+        clones: 0,
         liked: false,
         abstract,
         github: normGithub,
@@ -198,6 +305,7 @@ exports.submitProject = (req, res) => {
         vercel: normVercel,
         tech: techArray,
         collaborators: [],
+        assignedFaculty,
         comments: [],
         enhancements: [],
         files: uploadedFiles
@@ -206,18 +314,19 @@ exports.submitProject = (req, res) => {
       dataStore.projects.unshift(newProj);
       dataStore.guideRequests.unshift({
         id: newId,
+        projectId: newId,
         student: user ? user.name : 'Student',
         project: title,
-        faculty: faculty || 'Dr. Sarah Smith',
-        category,
+        faculty: assignedFaculty,
+        category: finalCategory,
         requested: 'Just now'
       });
 
       dataStore.notifications.unshift({
         id: dataStore.notifications.length + 1,
-        email: faculty || 'Faculty',
+        email: assignedFaculty,
         icon: 'chat',
-        text: `${user ? user.name : 'Student'} requested you as guide for external project "${title}"`,
+        text: `Assigned as guide for external project "${title}" by ${user ? user.name : 'Student'}`,
         time: 'Just now',
         route: '/guides',
         read: false
@@ -225,7 +334,7 @@ exports.submitProject = (req, res) => {
 
       return res.status(201).json({
         success: true,
-        message: `Guide request sent to ${faculty || 'Faculty'}`,
+        message: `External project submitted — guide request assigned`,
         project: newProj
       });
     }
@@ -388,15 +497,18 @@ exports.reportProject = (req, res) => {
     }
 
     const user = dataStore.users.find(u => u.email.toLowerCase() === req.user.email.toLowerCase());
+    const assignedFaculty = dataStore.assignRandomFacultyForDomain(p.category);
 
     const reportObj = {
       id: dataStore.getNextReportId(),
       projectId: p.id,
       projectTitle: p.title,
       reporter: user ? user.name : 'User',
+      reporterEmail: user ? user.email : '',
       category: category || 'General Violation',
       reason: reason || 'Inappropriate or non-compliant content',
       status: 'Pending',
+      assignedFaculty,
       createdAt: 'Just now'
     };
 
@@ -405,15 +517,25 @@ exports.reportProject = (req, res) => {
 
     dataStore.notifications.unshift({
       id: dataStore.notifications.length + 1,
+      email: assignedFaculty,
+      icon: 'bell',
+      text: `Report assigned for review: "${p.title}" reported by ${user ? user.name : 'User'}: ${category || 'Violation'}`,
+      time: 'Just now',
+      route: '/reviews?tab=reports',
+      read: false
+    });
+
+    dataStore.notifications.unshift({
+      id: dataStore.notifications.length + 1,
       email: 'Administrator',
       icon: 'bell',
-      text: `Report on "${p.title}" by ${user ? user.name : 'User'}: ${category || 'Violation'}`,
+      text: `Report on "${p.title}" assigned to ${assignedFaculty}`,
       time: 'Just now',
       route: '/admin?tab=reports',
       read: false
     });
 
-    return res.json({ success: true, message: 'Project reported to administrator' });
+    return res.json({ success: true, message: `Report filed — assigned to ${assignedFaculty} for faculty investigation` });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -434,6 +556,27 @@ exports.deleteProject = (req, res) => {
     }
 
     return res.json({ success: true, message: `Project "${deleted.title}" removed successfully` });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.cloneProject = (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const p = dataStore.projects.find(x => x.id === id);
+    if (!p) {
+      return res.status(404).json({ success: false, message: 'Project not found' });
+    }
+
+    p.clones = (p.clones || 0) + 1;
+    p.clonesCount = (p.clonesCount || 0) + 1;
+
+    return res.json({
+      success: true,
+      message: 'Clone recorded',
+      clones: p.clones
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

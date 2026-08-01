@@ -1,104 +1,79 @@
 <div align="center">
 
-# 🎓 Student Project Repository Platform
+# 🎓 Student Project Repository and Showcase Platform
+### TechNova Software Hackathon Deliverable | Team Codexx
 
-**An All-in-One Campus Academic Portfolio, Peer Collaboration & Project Governance System**
+**An All-in-One Campus Academic Portfolio, Peer Collaboration & Automated Project Governance Platform**
 
 [![React](https://img.shields.io/badge/Frontend-React%2018-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Backend-Node.js-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Express](https://img.shields.io/badge/Server-Express%204.x-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 ---
 
-### 🌟 Overview
-
-**Student Project Repository Platform** is a state-of-the-art web platform engineered for universities and academic institutions. It bridges the gap between students, faculty mentors, and campus administrators by providing a centralized hub to showcase projects, apply for faculty guidance, submit peer reviews, track leaderboard rankings, and govern project repositories.
+### 🌐 Live Application Deployment Link
+- **Live Platform URL**: [https://student-project-repository-codexx.vercel.app](https://student-project-repository-codexx.vercel.app) *(or your deployed server host link)*
+- **GitHub Repository**: [https://github.com/ragul-rakav/Student-Project-Repository-Platform](https://github.com/ragul-rakav/Student-Project-Repository-Platform)
 
 </div>
 
 ---
 
-## ✨ Key Features
+## 👥 Team Details (Team Codexx)
+
+| Role | Member Name | Register Number | Email |
+| :--- | :--- | :--- | :--- |
+| **Team Lead** | **Aarthi S** | `7376241CS102` | `aarthi.s@university.edu` |
+| **Member 1** | **Swathi S** | `7376241CS427` | `swathi.s@university.edu` |
+| **Member 2** | **Abishek R** | `7376241CS111` | `abishek.r@university.edu` |
+| **Member 3** | **K S Ragul Rakav** | `7376241CS221` | `ragul.rakav@university.edu` |
+
+*For complete team member details, see [`TEAM_DETAILS.md`](TEAM_DETAILS.md).*
+
+---
+
+## 📁 Repository Deliverables Index
+
+- 📄 **Software Requirements Specification**: [`SRS.md`](SRS.md)
+- 📊 **Comprehensive Project Report**: [`PROJECT_REPORT.md`](PROJECT_REPORT.md)
+- 👥 **Team Details File**: [`TEAM_DETAILS.md`](TEAM_DETAILS.md)
+- 🗄️ **Database Schema SQL Script**: [`server/database/schema.sql`](server/database/schema.sql)
+- 💾 **Database Seed Sample Data**: [`server/database/seed.sql`](server/database/seed.sql)
+
+---
+
+## ✨ Key Platform Features
 
 ### 🔐 1. Multi-Role Authentication & Access Control
-- **Student Tier**: Submit projects/ideas, request faculty guides, earn credit points, unlock project repositories, and engage with peer submissions.
-- **Faculty Tier**: Inspect full project details **prior to approval**, manage review queues, accept/reject guide requests, and award credits.
-- **Administrator Super-User**: Full access across all student & faculty views, moderation controls, user management, and direct content removal.
+- **Student Tier**: Submit internal/external projects and ideas, earn credit points, access unlocked project repositories based on earned tiers, and engage with peer submissions.
+- **Faculty Tier**: Inspect project specifications (abstract, tech stack, documentation, PPTs, videos, files) before approval, evaluate reviews, accept guide requests, and investigate violation reports.
+- **Administrator Governance**: Institutional metrics dashboard, user account management (add/remove students & faculty), custom domain verification, and moderation controls.
 
-### 🔍 2. Pre-Approval Inspection & Inline Link Verification
-- **Faculty Pre-Approval Inspector**: Allows faculty to review full source code links, documentation PDFs, tech stacks, and team members before approving a project into public repositories.
-- **Automatic URL Normalizer & Validator**: Backend automatically formats external links (`github.com/...`, `docs.google.com/...`) while displaying clear, field-level inline validation warnings without intrusive popups.
+### 🤖 2. Workload-Balanced Automated Reviewer Assignment
+- Automatically matches newly submitted internal projects with eligible active faculty based on domain expertise.
+- Enforces workload capacity thresholds per faculty member to prevent review overload.
+- Redacts reviewer identities on student views to guarantee unbiased evaluations.
 
-### 🛡️ 3. Structured Reporting & Moderation Center
-- **Structured Violation Reporting**: Modal system allowing users to report suspicious links, copyright issues, or inappropriate content directly to administrators.
-- **Admin Moderation Tab**: Dedicated queue for reviewing, resolving, or rejecting reports with automated notifications sent to involved parties.
+### ⚡ 3. Predefined & Custom Domain Verification
+- Predefined domains: `Machine Learning`, `Web Development`, `Mobile Development`, `Blockchain`, `Internet of Things`, `Cybersecurity`, `Cloud Computing`.
+- Custom domain requests (`Other`) trigger a greyed-out pending state (`⏳ Domain Approval Pending`) until verified by Administrators.
 
-### 🏆 4. Gamified Credit Tiers & Leaderboard
-- Students earn credit points through approved submissions and peer interactions.
-- Dynamic unlocks for **Idea Repository** (60+ credits), **Internal Projects** (100+ credits), and **External Projects** (200+ credits, min. 3 approved projects).
-- Clickable student profiles linking to customized user portfolio pages (`/profile?name=...`).
-
-### 🔔 5. Synchronized Interactive Notifications
-- Real-time notifications synced across top-bar dropdowns and dashboard views.
-- Direct route navigation (e.g., clicking a credit notification opens the target project; clicking a report notification opens the Admin moderation tab).
-- Manual notification removal controls on all views.
+### 🏆 4. Gamified Credit Points & Tiered Access
+- Earn credits for project approvals (+10 to +25), published ideas (+5 to +10), peer enhancements (+10), and project likes (1 credit per 10 likes).
+- Access control tiers:
+  - **Idea Repository**: $\ge$ 60 credits
+  - **Internal Projects**: $\ge$ 100 credits
+  - **External Projects**: $\ge$ 200 credits (minimum 3 approved projects floor)
 
 ---
 
-## 🛠️ Tech Stack
-
-| Domain | Technology | Description |
-| :--- | :--- | :--- |
-| **Frontend** | React 18, Vite | Lightning-fast component-driven UI |
-| **Routing** | React Router v6 | Client-side dynamic route management |
-| **Styling** | Custom Dark Theme CSS | HSL-tailored colors, smooth glassmorphism |
-| **Icons** | Custom SVG Icon Registry | Scalable, lightweight vector graphics |
-| **Backend** | Node.js, Express.js | Modular REST API server architecture |
-| **Data Layer** | Custom DataStore & SQL | Flexible JSON persistent store with PostgreSQL schema |
-| **HTTP Client** | Axios | Intercepted asynchronous backend requests |
-
----
-
-## 📂 Project Architecture
-
-```
-Student_Project_Repository_Platform/
-├── client/                      # Frontend Application (React 18 + Vite)
-│   ├── src/
-│   │   ├── components/         # Layout, Header, Navigation, Modals & Icons
-│   │   ├── context/            # AuthContext & AppState Context Providers
-│   │   ├── pages/              # Dashboard, Projects, Leaderboard, Reviews, Profile, Admin
-│   │   ├── services/           # Axios API configuration
-│   │   └── styles/             # Core CSS Design System & Global Styles
-│   ├── package.json
-│   └── vite.config.js
-│
-├── server/                      # Backend REST API Server (Node.js + Express)
-│   ├── config/                 # Environment & Server configuration
-│   ├── controllers/            # Route business logic (Projects, Reviews, Auth, Admin)
-│   ├── database/               # PostgreSQL Database Schema (`schema.sql`)
-│   ├── middleware/             # Role authorization & request validation
-│   ├── routes/                 # Express API Endpoint definitions
-│   ├── services/               # Data persistence layer (`dataStore.js`)
-│   ├── uploads/                # File storage directory
-│   ├── package.json
-│   └── server.js               # Application entry point
-│
-├── .gitignore
-├── CONTRIBUTING.md
-├── LICENSE
-└── README.md
-```
-
----
-
-## 🚀 Quick Start Guide
+## 🛠️ Quick Start & Installation
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v16.0 or higher)
-- [npm](https://www.npmjs.com/) (v8.0 or higher)
+- Node.js (v18 or higher)
+- PostgreSQL (v14 or higher)
 
 ### 1. Clone the Repository
 ```bash
@@ -106,57 +81,22 @@ git clone https://github.com/ragul-rakav/Student-Project-Repository-Platform.git
 cd Student-Project-Repository-Platform
 ```
 
-### 2. Setup & Launch Server (Backend)
+### 2. Backend Setup (`server`)
 ```bash
 cd server
 npm install
-npm start
+# Configure PostgreSQL environment in .env
+npm run dev
 ```
-*The backend API will start on `http://localhost:5000`.*
 
-### 3. Setup & Launch Client (Frontend)
-In a new terminal window:
+### 3. Frontend Setup (`client`)
 ```bash
-cd client
+cd ../client
 npm install
 npm run dev
 ```
-*The React application will open on `http://localhost:5173`.*
-
----
-
-## 📡 API Endpoint Overview
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/projects` | All | Fetch projects (supports sorting by `popular`, `latest`, `views`, `credits`) |
-| `POST` | `/api/projects` | Student | Submit new project for faculty review |
-| `POST` | `/api/projects/:id/report` | All | Submit structured content violation report |
-| `GET` | `/api/reviews` | Faculty / Admin | Fetch pending project review queue |
-| `POST` | `/api/reviews/action` | Faculty / Admin | Approve or reject submitted project |
-| `GET` | `/api/leaderboard` | All | Fetch student rankings & credit standings |
-| `GET` | `/api/admin/reports` | Admin | Fetch moderation queue of reported content |
-| `DELETE` | `/api/admin/projects/:id` | Admin | Super-user content removal |
-| `DELETE` | `/api/admin/notifications/:id` | All | Remove notification entry |
-
----
-
-## 🤝 Contributing
-
-Contributions are always welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) guide before opening pull requests or feature suggestions.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 
 ## 📄 License
-
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
-
-<div align="center">
-  <sub>Built with ❤️ by Ragul Rakav & The Student Project Repository Team</sub>
-</div>
+This project is licensed under the MIT License - see the [`LICENSE`](LICENSE) file for details.

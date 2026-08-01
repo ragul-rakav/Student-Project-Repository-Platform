@@ -252,32 +252,178 @@ exports.getReports = (req, res) => {
 
 exports.resolveReport = (req, res) => {
   try {
-    const { reportId, action } = req.body;
+    const { reportId, action, remark } = req.body;
+    if (!remark || !remark.trim()) {
+      return res.status(400).json({ success: false, message: 'Written remark/reason is required before resolving report.' });
+    }
+
     const report = (dataStore.reports || []).find(r => r.id === parseInt(reportId));
     if (!report) {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
+
+    const reporterUser = dataStore.users.find(u => 
+      u.name.toLowerCase() === report.reporter.toLowerCase() ||
+      (report.reporterEmail && u.email.toLowerCase() === report.reporterEmail.toLowerCase())
+    );
 
     if (action === 'deleteProject') {
       const projIndex = dataStore.projects.findIndex(p => p.id === report.projectId);
       if (projIndex !== -1) {
         dataStore.projects.splice(projIndex, 1);
       }
-      report.status = 'Action Taken: Project Removed';
-      dataStore.notifications.unshift({
-        id: dataStore.notifications.length + 1,
-        email: 'Administrator',
-        icon: 'check',
-        text: `Report #${report.id} resolved: Project "${report.projectTitle}" removed`,
-        time: 'Just now',
-        route: '/admin?tab=reports',
-        read: false
-      });
-      return res.json({ success: true, message: `Report approved: Project "${report.projectTitle}" has been removed.` });
+      report.status = `Approved: Project Removed (Remark: ${remark})`;
+
+      if (reporterUser) {
+        reporterUser.credits = (reporterUser.credits || 0) + 5;
+        reporterUser.creditHistory = reporterUser.creditHistory || [];
+        reporterUser.creditHistory.unshift({
+          id: Date.now(),
+          title: `Valid Content Moderation Report Reward`,
+          points: 5,
+          date: new Date().toISOString().split('T')[0],
+          type: 'reward'
+        });
+      }
+
+      return res.json({ success: true, message: `Report approved — project removed. Remark logged: "${remark}"` });
     } else {
-      report.status = 'Rejected / Dismissed';
-      return res.json({ success: true, message: 'Report dismissed' });
+      report.status = `Dismissed / Fake Report (Remark: ${remark})`;
+
+      // FAKE REPORT PENALTY: -5 CREDITS DEDUCTED FROM REPORTER
+      if (reporterUser) {
+        reporterUser.credits = Math.max(0, (reporterUser.credits || 0) - 5);
+        reporterUser.creditHistory = reporterUser.creditHistory || [];
+        reporterUser.creditHistory.unshift({
+          id: Date.now(),
+          title: `Fake / Invalid Report Penalty (${report.projectTitle})`,
+          points: -5,
+          date: new Date().toISOString().split('T')[0],
+          type: 'penalty'
+        });
+
+        dataStore.notifications.unshift({
+          id: dataStore.notifications.length + 1,
+          email: reporterUser.email,
+          icon: 'x',
+          text: `Your content report on "${report.projectTitle}" was dismissed as invalid. -5 credits penalty applied. Remark: "${remark}"`,
+          time: 'Just now',
+          route: '/profile',
+          read: false
+        });
+      }
+
+      return res.json({ success: true, message: `Report dismissed as fake/invalid. -5 credits deducted from ${report.reporter}.` });
     }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.getDomainRequests = (req, res) => {
+  try {
+    return res.json({ success: true, domainRequests: dataStore.domainRequests || [] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.resolveDomainRequest = (req, res) => {
+  try {
+    const { requestId, action, assignedFaculty, approvedDomainName } = req.body;
+    const request = (dataStore.domainRequests || []).find(r => r.id === parseInt(requestId));
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Domain request not found' });
+    }
+
+    const project = dataStore.projects.find(p => p.id === request.projectId);
+
+    if (action === 'approve') {
+      request.status = 'Approved';
+      const finalDomain = approvedDomainName || request.proposedDomain;
+
+      // Add to predefined domains if new
+      if (!dataStore.predefinedDomains.includes(finalDomain)) {
+        dataStore.predefinedDomains.push(finalDomain);
+      }
+
+      if (project) {
+        project.category = finalDomain;
+        project.status = project.type === 'Internal' ? 'In Review' : 'Pending Guide';
+        const selectedFaculty = assignedFaculty || dataStore.assignRandomFacultyForDomain(finalDomain);
+        project.assignedFaculty = selectedFaculty;
+
+        if (project.type === 'Internal') {
+          dataStore.reviewQueue.unshift({
+            id: project.id,
+            projectId: project.id,
+            title: project.title,
+            author: project.author,
+            category: finalDomain,
+            submitted: 'Just now',
+            type: 'Internal',
+            faculty: selectedFaculty,
+            isEnhancement: false,
+            abstract: project.abstract,
+            github: project.github,
+            doc: project.doc,
+            ppt: project.ppt,
+            tech: project.tech,
+            files: project.files
+          });
+        } else {
+          dataStore.guideRequests.unshift({
+            id: project.id,
+            projectId: project.id,
+            student: project.author,
+            project: project.title,
+            faculty: selectedFaculty,
+            category: finalDomain,
+            requested: 'Just now'
+          });
+        }
+
+        dataStore.notifications.unshift({
+          id: dataStore.notifications.length + 1,
+          email: project.author,
+          icon: 'check',
+          text: `Your custom domain "${finalDomain}" for project "${project.title}" was approved by Administrator!`,
+          time: 'Just now',
+          route: '/projects',
+          read: false
+        });
+      }
+
+      return res.json({ success: true, message: `Domain "${finalDomain}" approved and project assigned to ${project ? project.assignedFaculty : 'Faculty'}.` });
+    } else {
+      request.status = 'Rejected';
+      if (project) {
+        project.status = 'Domain Rejected';
+      }
+      return res.json({ success: true, message: 'Custom domain request rejected' });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.updateFacultyConfig = (req, res) => {
+  try {
+    const { facultyId, specializations, maxPendingThreshold } = req.body;
+    const faculty = dataStore.users.find(u => u.id === parseInt(facultyId) && u.role === 'Faculty');
+
+    if (!faculty) {
+      return res.status(404).json({ success: false, message: 'Faculty member not found' });
+    }
+
+    if (specializations && Array.isArray(specializations)) {
+      faculty.specializations = specializations;
+    }
+    if (maxPendingThreshold !== undefined) {
+      faculty.maxPendingThreshold = parseInt(maxPendingThreshold);
+    }
+
+    return res.json({ success: true, message: `Updated configuration for ${faculty.name}`, faculty });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }

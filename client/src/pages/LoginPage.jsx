@@ -12,7 +12,7 @@ const roleMeta = {
 
 export default function LoginPage() {
   const [loginRole, setLoginRole] = useState('Student');
-  const [email, setEmail] = useState('alex@university.edu');
+  const [email, setEmail] = useState('kavitha@university.edu');
   const [password, setPassword] = useState('password');
   const [loading, setLoading] = useState(false);
 
@@ -22,9 +22,9 @@ export default function LoginPage() {
 
   const handleRoleChange = (r) => {
     setLoginRole(r);
-    if (r === 'Faculty') setEmail('sarah.smith@university.edu');
+    if (r === 'Faculty') setEmail('arumugam@university.edu');
     else if (r === 'Administrator') setEmail('admin@university.edu');
-    else setEmail('alex@university.edu');
+    else setEmail('kavitha@university.edu');
   };
 
   const handleSubmit = async (e) => {
