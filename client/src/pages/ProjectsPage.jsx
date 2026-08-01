@@ -245,6 +245,32 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleOpenCloneModal = (e, project) => {
+    if (e) e.stopPropagation();
+    setSelectedProject(project);
+    setModal('clone');
+  };
+
+  const handleCopyCloneCmd = (project) => {
+    const gitUrl = project?.github || `https://github.com/campus/${(project?.title || 'repo').toLowerCase().replace(/\s+/g, '-')}`;
+    const cmd = `git clone ${gitUrl}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(cmd);
+    }
+    showToast(`Copied: "${cmd}"`);
+  };
+
+  const handleForkProjectDraft = (project) => {
+    resetSubmitForm();
+    setTitle(`Fork: ${project.title}`);
+    setCategory(project.category || 'Web Development');
+    setTech(Array.isArray(project.tech) ? project.tech.join(', ') : (project.tech || ''));
+    setAbstract(`Forked / Continuation build of "${project.title}" by ${project.author}.\nOriginal Repository: ${project.github || 'N/A'}`);
+    setGithub(project.github || '');
+    setModal('submit');
+    showToast(`Initialized project draft from ${project.title}`);
+  };
+
   const handleDeleteProject = async (e, projectId) => {
     e.stopPropagation();
     try {
@@ -393,16 +419,28 @@ export default function ProjectsPage() {
                     <span><Icon name="comment" size={15} /> {p.commentsCount || (p.comments ? p.comments.length : 0)}</span>
                     <span><Icon name="eye" size={15} /> {p.views}</span>
                   </div>
-                  {currentUser?.role === 'Administrator' && (
-                    <button
-                      className="btn btn-danger-outline btn-sm"
-                      style={{ padding: '2px 6px', fontSize: '11px' }}
-                      onClick={(e) => handleDeleteProject(e, p.id)}
-                      title="Admin: Remove project"
-                    >
-                      Delete
-                    </button>
-                  )}
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {hasAccess && (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ padding: '2px 8px', fontSize: '11.5px', height: '26px' }}
+                        onClick={(e) => handleOpenCloneModal(e, p)}
+                        title="Clone or Fork Project"
+                      >
+                        <Icon name="folder" size={13} /> Clone
+                      </button>
+                    )}
+                    {currentUser?.role === 'Administrator' && (
+                      <button
+                        className="btn btn-danger-outline btn-sm"
+                        style={{ padding: '2px 6px', fontSize: '11px', height: '26px' }}
+                        onClick={(e) => handleDeleteProject(e, p.id)}
+                        title="Admin: Remove project"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -533,6 +571,55 @@ export default function ProjectsPage() {
         </div>
       )}
 
+      {/* MODAL: CLONE / FORK */}
+      {modal === 'clone' && selectedProject && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
+          <div className="modal" style={{ width: '520px', maxWidth: '95%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="notif-icon" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                  <Icon name="folder" size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '18px' }}>Clone & Fork Repository</h3>
+              </div>
+              <button className="icon-btn" onClick={() => setModal(null)}><Icon name="x" size={18} /></button>
+            </div>
+
+            <p className="hint" style={{ marginBottom: '16px' }}>
+              Clone or fork <b>"{selectedProject.title}"</b> to start an extension, bug fix, or personal build.
+            </p>
+
+            <div style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px', marginBottom: '18px' }}>
+              <label style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
+                Git CLI Command:
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#090d16', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <code style={{ fontSize: '13px', color: '#38bdf8', flex: 1, fontFamily: 'monospace', overflowX: 'auto' }}>
+                  git clone {selectedProject.github || `https://github.com/campus/${(selectedProject.title || 'repo').toLowerCase().replace(/\s+/g, '-')}`}
+                </code>
+                <button className="btn btn-primary btn-sm" onClick={() => handleCopyCloneCmd(selectedProject)}>
+                  Copy CLI
+                </button>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '10px', padding: '14px', marginBottom: '18px' }}>
+              <h4 style={{ margin: '0 0 6px', fontSize: '14px', color: '#fff' }}>Fork & Build Enhancement</h4>
+              <p style={{ fontSize: '12.5px', color: 'var(--muted)', margin: '0 0 10px', lineHeight: 1.45 }}>
+                Initialize a new student project submission draft pre-filled with this repository's tech stack and category.
+              </p>
+              <button className="btn btn-outline btn-sm" style={{ width: '100%', justifyContent: 'center' }} onClick={() => handleForkProjectDraft(selectedProject)}>
+                <Icon name="plus" size={14} /> Fork as New Student Build Draft
+              </button>
+            </div>
+
+            <div className="modal-actions" style={{ justifyContent: 'flex-end' }}>
+              <button className="btn btn-outline" onClick={() => setModal(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL: LOCKED */}
       {modal === 'locked' && (
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && setModal(null)}>
@@ -635,7 +722,8 @@ export default function ProjectsPage() {
             )}
 
             <div className="modal-actions" style={{ marginTop: '18px', justifyContent: 'space-between', borderTop: '1px solid var(--border)', paddingTop: '12px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button className="btn btn-primary btn-sm" onClick={(e) => handleOpenCloneModal(e, selectedProject)}><Icon name="folder" size={14} /> Clone / Fork Project</button>
                 <button className="btn btn-outline btn-sm" onClick={handleOpenReportModal}><Icon name="bell" size={14} /> Report Project</button>
                 {currentUser?.role === 'Student' && currentUser?.name !== selectedProject.author && !(selectedProject.collaborators || []).includes(currentUser?.name) && (
                   <button className="btn btn-primary btn-sm" onClick={() => handleRequestCollab(selectedProject.id)}><Icon name="plus" size={14} /> Request Collaboration</button>
